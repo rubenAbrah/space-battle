@@ -2,8 +2,14 @@ version: '3.8'
 
 services:
   tests:
-    build: .
+    image: php:8.2-cli
     volumes:
       - .:/app
     working_dir: /app
-    command: sh -c "composer dump-autoload -o && vendor/bin/phpunit --colors=always"
+    environment:
+      - APP_ENV=testing
+    command: >
+      sh -c "apt-get update && apt-get install -y git unzip &&
+      curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer &&
+      composer install --prefer-dist --no-progress &&
+      vendor/bin/phpunit --colors=always --testdox"
