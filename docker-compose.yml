@@ -1,15 +1,41 @@
 version: '3.8'
 
 services:
-  tests:
-    image: php:8.2-cli
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    user: "${UID:-1000}:${GID:-1000}"
+    working_dir: /var/www
+    ports:
+      - "8000:8000"
     volumes:
-      - .:/app
-    working_dir: /app
+      - .:/var/www
     environment:
-      - APP_ENV=testing
-    command: >
-      sh -c "apt-get update && apt-get install -y git unzip &&
-      curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer &&
-      composer install --prefer-dist --no-progress &&
-      vendor/bin/phpunit --colors=always --testdox"
+      - GIT_DISCOVERY_ACROSS_FILESYSTEM=1
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=space_battle
+      - DB_USERNAME=root
+      - DB_PASSWORD=secret
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: space_battle
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-psecret"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  mysql_data:
